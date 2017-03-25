@@ -1,0 +1,9 @@
+.vs/
+Debug/
+bin/
+obj/
+packages/
+*.vspx
+*.psess
+*.bak
+*.user

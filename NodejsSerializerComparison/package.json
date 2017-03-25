@@ -1,0 +1,9 @@
+{
+  "name": "nodejs-serializer-comparison",
+  "version": "0.0.0",
+  "description": "NodejsSerializerComparison",
+  "main": "app.js",
+  "author": {
+    "name": "Oipo"
+  }
+}
