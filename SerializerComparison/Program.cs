@@ -1,133 +1,272 @@
-﻿using System;
+﻿using NLog;
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Threading;
 
 namespace SerializerComparison
 {
     class Program
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
+
         static void Main(string[] args)
         {
+            var process = Process.GetCurrentProcess();
+            process.ProcessorAffinity = (System.IntPtr)1;
+            process.PriorityClass = ProcessPriorityClass.High;
+
             DataContractSerializer xmldcs = new DataContractSerializer(typeof(PersonWithoutAttributes));
-            var settings = new DataContractJsonSerializerSettings();
-            settings.DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssK");
+            var settings = new DataContractJsonSerializerSettings()
+            {
+                DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssK")
+            };
             DataContractJsonSerializer jsondcs = new DataContractJsonSerializer(typeof(Person), settings);
             BinaryFormatter bf = new BinaryFormatter();
             Newtonsoft.Json.JsonSerializer NewtonJson = new Newtonsoft.Json.JsonSerializer();
+            var msgpack = MsgPack.Serialization.SerializationContext.Default.GetSerializer<PersonWithoutAttributes>();
 
             Jil.JSON.SetDefaultOptions(new Jil.Options(unspecifiedDateTimeKindBehavior: Jil.UnspecifiedDateTimeKindBehavior.IsUTC));
 
-            TestRunner.RunTestSerialize((p) =>
+            logger.Info("Starting measurements");
+
+            Thread.Sleep(500);
+
+            var measurements = TestRunner.RunTestSerialize((p) =>
             {
                 Jil.JSON.Serialize(p);
-            }, TestRunner.CreatePersonWithoutAttributes(), "Jil");
+            }, TestRunner.CreatePersonWithoutAttributes());
 
-            /*TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "Jil Serialization");
+            logger.Debug($"Jil Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
             {
                 using (var writer = new StreamWriter(stream, Encoding.UTF8, 512, true))
                 {
                     Jil.JSON.Serialize(p, writer);
                 }
-            }, TestRunner.CreatePersonWithoutAttributes(), "Jil Stream");
+            }, TestRunner.CreatePersonWithoutAttributes());
 
-            TestRunner.RunTestSerialize((p) =>
+            TestRunner.PrintMeasurements(measurements, "Jil Stream Serialization");
+            logger.Debug($"Jil Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
+            {
+                using (var writer = new StringWriter())
+                {
+                    Jil.JSON.Serialize(p, writer);
+                }
+            }, TestRunner.CreatePersonWithoutAttributes());
+
+            TestRunner.PrintMeasurements(measurements, "Jil StringWriter Serialization");
+            logger.Debug($"Jil StringWriter Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((p) =>
             {
                 NetJSON.NetJSON.Serialize(p);
-            }, TestRunner.CreatePersonWithoutAttributes(), "NetJSON");
+            }, TestRunner.CreatePersonWithoutAttributes());
 
-            TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "NetJSON Serialization");
+            logger.Debug($"NetJSON Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
             {
                 using (var writer = new StreamWriter(stream, Encoding.UTF8, 512, true))
                 {
                     NetJSON.NetJSON.Serialize(p, writer);
                 }
-            }, TestRunner.CreatePersonWithoutAttributes(), "NetJSON Stream");
+            }, TestRunner.CreatePersonWithoutAttributes());
 
-            TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "NetJSON Stream Serialization");
+            logger.Debug($"NetJSON Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
             {
                 using (var writer = new StreamWriter(stream, Encoding.UTF8, 512, true))
                 {
                     NewtonJson.Serialize(writer, p);
                 }
-            }, TestRunner.CreatePersonWithoutAttributes(), "Newtonsoft.Json Stream");
+            }, TestRunner.CreatePersonWithoutAttributes());
 
-            TestRunner.RunTestSerialize((PersonProtobuf p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "Newtonsoft.Json Stream Serialization");
+            logger.Debug($"Newtonsoft.Json Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonProtobuf p, Stream stream) =>
             {
                 ProtoBuf.Serializer.Serialize(stream, p);
-            }, TestRunner.CreatePersonProtobuf(), "ProtoBuf stream");
+            }, TestRunner.CreatePersonProtobuf());
 
-            TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "ProtoBuf Stream Serialization");
+            logger.Debug($"ProtoBuf Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
+            {
+                msgpack.Pack(stream, p);
+            }, TestRunner.CreatePersonWithoutAttributes());
+
+            TestRunner.PrintMeasurements(measurements, "MsgPack Stream Serialization");
+            logger.Debug($"MsgPack Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
             {
                 xmldcs.WriteObject(stream, p);
-            }, TestRunner.CreatePersonWithoutAttributes(), "DataContractSerializer stream");
+            }, TestRunner.CreatePersonWithoutAttributes());
 
-            TestRunner.RunTestSerialize((Person p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "DataContractSerializer Stream Serialization");
+            logger.Debug($"DataContractSerializer Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((Person p, Stream stream) =>
             {
                 jsondcs.WriteObject(stream, p);
-            }, TestRunner.CreatePerson(), "DataContractJsonSerializer stream");
+            }, TestRunner.CreatePerson());
 
-            TestRunner.RunTestSerialize((Person p, Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "DataContractJsonSerializer Stream Serialization");
+            logger.Debug($"DataContractJsonSerializer Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((Person p, Stream stream) =>
             {
                 bf.Serialize(stream, p);
-            }, TestRunner.CreatePerson(), "BinaryFormatter stream");
+            }, TestRunner.CreatePerson());
 
-            TestRunner.RunTestDeserialize((json) =>
+            TestRunner.PrintMeasurements(measurements, "BinaryFormatter Stream Serialization");
+            logger.Debug($"BinaryFormatter Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((json) =>
             {
                 Jil.JSON.Deserialize<PersonWithoutAttributes>(json);
-            }, "Jil");
+            });
 
-            TestRunner.RunTestDeserialize((stream) =>
+            TestRunner.PrintMeasurements(measurements, "Jil Without Attributes Deserialization");
+            logger.Debug($"Jil Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((json) =>
+            {
+                // Doesn't deserialize birthday and expirationdate, making it faster than it should be
+                Jil.JSON.Deserialize<Person>(json);
+            });
+
+            TestRunner.PrintMeasurements(measurements, "Jil With Attributes Deserialization");
+            logger.Debug($"Jil Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
             {
                 using (var reader = new StreamReader(stream, Encoding.UTF8, true, 512, true))
                 {
                     Jil.JSON.Deserialize<PersonWithoutAttributes>(reader);
                 }
-            }, "Jil Stream");
+            });
 
-            TestRunner.RunTestDeserialize((json) =>
-            {
-                NetJSON.NetJSON.Deserialize<PersonWithoutAttributes>(json);
-            }, "NetJSON");
+            TestRunner.PrintMeasurements(measurements, "Jil Stream Deserialization");
+            logger.Debug($"Jil Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
-            TestRunner.RunTestDeserialize((stream) =>
+            Type personType = typeof(PersonWithoutAttributes);
+            measurements = TestRunner.RunTestDeserialize((stream) =>
             {
                 using (var reader = new StreamReader(stream, Encoding.UTF8, true, 512, true))
                 {
+                    Jil.JSON.Deserialize(reader, personType);
+                }
+            });
+
+            TestRunner.PrintMeasurements(measurements, "Jil Stream Type Without Attributes Deserialization");
+            logger.Debug($"Jil Stream Type Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            personType = typeof(Person);
+            measurements = TestRunner.RunTestDeserialize((stream) =>
+            {
+                using (var reader = new StreamReader(stream, Encoding.UTF8, true, 512, true))
+                {
+                    // Doesn't deserialize birthday and expirationdate, making it faster than it should be
+                    Jil.JSON.Deserialize(reader, personType);
+                }
+            });
+
+            TestRunner.PrintMeasurements(measurements, "Jil Stream Type With Attributes Deserialization");
+            logger.Debug($"Jil Stream Type Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((json) =>
+            {
+                // Doesn't deserialize datetimes well
+                NetJSON.NetJSON.Deserialize<PersonWithoutAttributes>(json);
+            });
+
+            TestRunner.PrintMeasurements(measurements, "NetJSON Deserialization");
+            logger.Debug($"NetJSON Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
+            {
+                using (var reader = new StreamReader(stream, Encoding.UTF8, true, 512, true))
+                {
+                    // Doesn't deserialize datetimes well
                     NetJSON.NetJSON.Deserialize<PersonWithoutAttributes>(reader);
                 }
-            }, "NetJSON Stream");
+            });
 
-            TestRunner.RunTestDeserialize((stream) =>
+            TestRunner.PrintMeasurements(measurements, "NetJSON Stream Deserialization");
+            logger.Debug($"NetJSON Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
             {
                 using (var reader = new StreamReader(stream, Encoding.UTF8, true, 512, true))
                 {
                     NewtonJson.Deserialize(reader, typeof(PersonWithoutAttributes));
                 }
-            }, "Newtonsoft.Json Stream");
+            });
 
-            TestRunner.RunTestDeserialize((Stream stream) =>
+            TestRunner.PrintMeasurements(measurements, "Newtonsoft.Json Stream Deserialization");
+            logger.Debug($"Newtonsoft.Json Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((Stream stream) =>
             {
                 ProtoBuf.Serializer.Deserialize<PersonProtobuf>(stream);
-            }, "ProtoBuf stream", TestRunner.FormatType.ProtobufFormat);
+            }, TestRunner.FormatType.ProtobufFormat);
 
-            TestRunner.RunTestDeserialize((stream) =>
+            TestRunner.PrintMeasurements(measurements, "ProtoBuf Stream Deserialization");
+            logger.Debug($"ProtoBuf Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
+            {
+                using (var reader = new StreamReader(stream, Encoding.UTF8, true, 512, true))
+                {
+                    msgpack.Unpack(stream);
+                }
+            }, TestRunner.FormatType.MsgPackFormat);
+
+            TestRunner.PrintMeasurements(measurements, "MsgPack Stream Deserialization");
+            logger.Debug($"MsgPack Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
             {
                 xmldcs.ReadObject(stream);
-            }, "DataContractSerializer", TestRunner.FormatType.XmlFormat);
+            }, TestRunner.FormatType.XmlFormat);
 
-            TestRunner.RunTestDeserialize((stream) =>
+            TestRunner.PrintMeasurements(measurements, "DataContractSerializer Stream Deserialization");
+            logger.Debug($"DataContractSerializer Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
             {
+                // Doesn't deserialize birthday and expirationdate, making it faster than it should be
                 jsondcs.ReadObject(stream);
-            }, "DataContractJsonSerializer");
+            });
 
-            TestRunner.RunTestDeserialize((stream) =>
+            TestRunner.PrintMeasurements(measurements, "DataContractJsonSerializer Stream Deserialization");
+            logger.Debug($"DataContractJsonSerializer Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((stream) =>
             {
                 bf.Deserialize(stream);
-            }, "BinaryFormatter", TestRunner.FormatType.BinaryFormat);*/
+            }, TestRunner.FormatType.BinaryFormat);
 
+            TestRunner.PrintMeasurements(measurements, "BinaryFormatter Stream Deserialization");
+            logger.Debug($"BinaryFormatter Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            logger.Info("Stopping measurements");
             Console.ReadKey();
         }
     }

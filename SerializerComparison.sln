@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppSerializerComparison", "
 EndProject
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "NodejsSerializerComparison", "NodejsSerializerComparison\NodejsSerializerComparison.njsproj", "{63EDB58C-8942-4F70-A7E9-3B734C6FA28C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxPlotter", "BoxPlotter\BoxPlotter.csproj", "{2B535395-712A-4229-8CE9-25147AB9E2B6}"
+EndProject
 Global
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true
@@ -56,6 +58,18 @@ Global
 		{63EDB58C-8942-4F70-A7E9-3B734C6FA28C}.Release|x64.Build.0 = Release|Any CPU
 		{63EDB58C-8942-4F70-A7E9-3B734C6FA28C}.Release|x86.ActiveCfg = Release|Any CPU
 		{63EDB58C-8942-4F70-A7E9-3B734C6FA28C}.Release|x86.Build.0 = Release|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Debug|x64.Build.0 = Debug|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Debug|x86.Build.0 = Debug|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Release|x64.ActiveCfg = Release|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Release|x64.Build.0 = Release|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Release|x86.ActiveCfg = Release|Any CPU
+		{2B535395-712A-4229-8CE9-25147AB9E2B6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

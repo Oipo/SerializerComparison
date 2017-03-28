@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -253,6 +254,40 @@ namespace SerializerComparison
                 person.Documents.First().Content.Should().Be(",");
                 person.Documents.First().ExpirationDate.Should().Be(new DateTime(2001, 1, 1));
             }
+        }
+
+        [Fact]
+        public void PersonBirthdayShouldStoreCorrectly()
+        {
+            Person p = new Person()
+            {
+                Birthday = new DateTime(2002, 1, 2)
+            };
+            p.Birthday.Should().Be(new DateTime(2002, 1, 2));
+        }
+
+        [Fact]
+        public void DocumentExpirationDateShouldStoreCorrectly()
+        {
+            Document p = new Document()
+            {
+                ExpirationDate = new DateTime(2002, 1, 2)
+            };
+            p.ExpirationDate.Should().Be(new DateTime(2002, 1, 2));
+        }
+
+        [Fact]
+        public void DatetimeParseJsonDataCorrectly()
+        {
+            string jsonDate = "/Date(1490452166591)/";
+            var epochDate = new DateTime(1970, 1, 1);
+            long.TryParse(jsonDate.Replace("/Date(", string.Empty).Replace(")/", string.Empty), out long millisec).Should().Be(true);
+            millisec.Should().Be(1490452166591);
+            var date = epochDate.AddMilliseconds(millisec);
+
+            DateTime checkDate = Newtonsoft.Json.JsonConvert.DeserializeObject<DateTime>($"\"{jsonDate}\"");
+
+            date.Should().Be(checkDate);
         }
     }
 }

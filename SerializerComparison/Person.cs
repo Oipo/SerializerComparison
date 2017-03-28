@@ -1,7 +1,6 @@
 ﻿using ProtoBuf;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.Serialization;
 
 namespace SerializerComparison
@@ -31,6 +30,8 @@ namespace SerializerComparison
     [Serializable]
     public class Document
     {
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1);
+
         [DataMember]
         public int Id { get; set; }
 
@@ -43,17 +44,17 @@ namespace SerializerComparison
         [DataMember(Name = "ExpirationDate")]
         private string FormattedExpirationDate { get; set; }
 
-        // see http://stackoverflow.com/questions/10945825/datacontractjsonserializer-parsing-iso-8601-date
         [IgnoreDataMember]
         public DateTime ExpirationDate
         {
             get
             {
-                return DateTime.ParseExact(FormattedExpirationDate, "o", CultureInfo.InvariantCulture);
+                long.TryParse(FormattedExpirationDate.Replace("/Date(", string.Empty).Replace(")/", string.Empty), out long millisec);
+                return UnixEpoch.AddMilliseconds(millisec);
             }
             set
             {
-                FormattedExpirationDate = value.ToString("o");
+                FormattedExpirationDate = $"/Date({(value - UnixEpoch).Ticks / TimeSpan.TicksPerMillisecond})/";
             }
         }
     }
@@ -62,21 +63,25 @@ namespace SerializerComparison
     [Serializable]
     public class Person : IPerson
     {
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1);
+
         [DataMember]
         public int Age { get; set; }
 
-        [DataMember( Name = "Birthday")]
+        [DataMember(Name = "Birthday")]
         private string FormattedBirthday { get; set; }
 
         [IgnoreDataMember]
-        public DateTime Birthday {
+        public DateTime Birthday
+        {
             get
             {
-                return DateTime.ParseExact(FormattedBirthday, "o", CultureInfo.InvariantCulture);
+                long.TryParse(FormattedBirthday.Replace("/Date(", string.Empty).Replace(")/", string.Empty), out long millisec);
+                return UnixEpoch.AddMilliseconds(millisec);
             }
             set
             {
-                FormattedBirthday = value.ToString("o");
+                FormattedBirthday = $"/Date({(value - UnixEpoch).Ticks / TimeSpan.TicksPerMillisecond})/";
             }
         }
 

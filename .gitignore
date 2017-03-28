@@ -7,3 +7,5 @@ packages/
 *.psess
 *.bak
 *.user
+/measurements.txt
+

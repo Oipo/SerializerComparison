@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
+using System.Linq;
 
 namespace SerializerComparison
 {
@@ -14,13 +14,34 @@ namespace SerializerComparison
             JsonFormat,
             XmlFormat,
             BinaryFormat,
-            ProtobufFormat
+            ProtobufFormat,
+            MsgPackFormat
         }
 
-        const long reserveGcMem = 1024 * 1024;
-        const int repititions = 1_000;
+        const long reserveGcMem = 1024 * 1024 * 1;
+        const int repititions = 250;
+        const int documentsCount = 1000;
 
-        public static long Run(Action action, string name)
+        public static double ConvertToMicroSeconds(long ticks)
+        {
+            return ConvertToMicroSeconds((double)ticks);
+        }
+
+        public static double ConvertToMicroSeconds(double ticks)
+        {
+            return ticks / Stopwatch.Frequency * 1_000_000;
+        }
+
+        public static void PrintMeasurements(List<long> measurements, string name)
+        {
+            long min = measurements.Min();
+            var max = measurements.Max();
+            var avg = measurements.Average();
+
+            Console.WriteLine($"{name} - min {ConvertToMicroSeconds(min):0.##} µs - max {ConvertToMicroSeconds(max):0.##} µs- avg {ConvertToMicroSeconds(avg):0.##} µs");
+        }
+
+        public static long Run(Action action)
         {
             if (!GC.TryStartNoGCRegion(reserveGcMem))
             {
@@ -32,97 +53,100 @@ namespace SerializerComparison
             action();
 
             sw.Stop();
-
-            try
-            {
-                GC.EndNoGCRegion();
-            }
-            catch
-            {
-                // do nothing
-            }
-
-            //Console.WriteLine($"{name} took {sw.ElapsedMilliseconds} ms");
+            
+            GC.EndNoGCRegion();
             GC.Collect();
-            GC.WaitForFullGCComplete();
 
-            return sw.ElapsedMilliseconds;
+            return sw.ElapsedTicks;
         }
 
         public static List<long> RunTestSerialize<T>(Action<T> serializeAction, T person)
             where T : IPerson
         {
-            List<long> measurements = new List<long>();
+            List<long> measurements = new List<long>
+            {
+                Capacity = repititions
+            };
+
+            // hot run / prime the pump / warmup
+            serializeAction(person);
 
             for (int i = 0; i < repititions; i++)
             {
                 measurements.Add(Run(() =>
                 {
-                        serializeAction(person);
-                }, $"{name} Serialization"));
+                    serializeAction(person);
+                }));
             }
 
             return measurements;
         }
 
-        public static void RunTestSerialize<T>(Action<T, Stream> serializeAction, T person, string name)
+        public static List<long> RunTestSerialize<T>(Action<T, Stream> serializeAction, T person)
             where T : IPerson
         {
+            List<long> measurements = new List<long>
+            {
+                Capacity = repititions
+            };
+
             using (var stream = new MemoryStream())
             {
-                Run(() =>
-                {
-                    for (int i = 0; i < repititions; i++)
-                    {
-                        serializeAction(person, stream);
-                        stream.Seek(0, SeekOrigin.Begin);
-                    }
-                }, $"{name} Cold Serialization");
+                // hot run / prime the pump / warmup
+                serializeAction(person, stream);
+                stream.Seek(0, SeekOrigin.Begin);
 
-                Run(() =>
+                for (int i = 0; i < repititions; i++)
                 {
-                    for (int i = 0; i < repititions; i++)
+                    measurements.Add(Run(() =>
                     {
+
                         serializeAction(person, stream);
                         stream.Seek(0, SeekOrigin.Begin);
-                    }
-                }, $"{name} Hot Serialization");
+                    }));
+                }
             }
+
+            return measurements;
         }
 
-        public static void RunTestDeserialize(Action<string> deserializeAction, string name, FormatType type = FormatType.JsonFormat)
+        public static List<long> RunTestDeserialize(Action<string> deserializeAction, FormatType type = FormatType.JsonFormat)
         {
             string input;
             if (type == FormatType.JsonFormat)
             {
                 input = File.ReadAllText("PersonJson.txt");
             }
-            else if(type == FormatType.XmlFormat)
+            else if (type == FormatType.XmlFormat)
             {
                 input = File.ReadAllText("PersonXml.txt");
-            } else
+            }
+            else
             {
                 throw new Exception();
             }
 
-            Run(() =>
+            List<long> measurements = new List<long>
             {
-                for (int i = 0; i < repititions; i++)
-                {
-                    deserializeAction(input);
-                }
-            }, $"{name} Cold Deserialization");
+                Capacity = repititions
+            };
 
-            Run(() =>
+            // hot run / prime the pump / warmup
+            deserializeAction(input);
+
+            for (int i = 0; i < repititions; i++)
             {
-                for (int i = 0; i < repititions; i++)
+                measurements.Add(Run(() =>
                 {
-                    deserializeAction(input);
-                }
-            }, $"{name} Hot Deserialization");
+                
+                        deserializeAction(input);
+                }));
+            }
+
+            return measurements;
         }
 
-        public static void RunTestDeserialize(Action<Stream> deserializeAction, string name, FormatType type = FormatType.JsonFormat)
+        public static List<long> RunTestDeserialize(Action<Stream> deserializeAction, FormatType type = FormatType.JsonFormat)
         {
             string input;
             byte[] binaryInput;
@@ -136,19 +160,30 @@ namespace SerializerComparison
                 input = File.ReadAllText("PersonXml.txt");
                 binaryInput = new byte[0];
             }
-            else if(type == FormatType.ProtobufFormat)
+            else if (type == FormatType.ProtobufFormat)
             {
                 input = "";
                 binaryInput = File.ReadAllBytes("PersonProtobuf.txt");
+            }
+            else if(type == FormatType.MsgPackFormat)
+            {
+                input = "";
+                binaryInput = File.ReadAllBytes("PersonMsgPack.txt");
             }
             else
             {
                 input = "";
                 binaryInput = File.ReadAllBytes("PersonBinary.txt");
             }
+
+            List<long> measurements = new List<long>
+            {
+                Capacity = repititions
+            };
+
             using (var stream = new MemoryStream())
             {
-                if (type == FormatType.BinaryFormat || type == FormatType.ProtobufFormat)
+                if (type == FormatType.BinaryFormat || type == FormatType.ProtobufFormat || type == FormatType.MsgPackFormat)
                 {
                     using (var writer = new BinaryWriter(stream, new UTF8Encoding(false), true))
                     {
@@ -164,31 +199,31 @@ namespace SerializerComparison
                 }
                 stream.Seek(0, SeekOrigin.Begin);
 
-                Run(() =>
-                {
-                    for (int i = 0; i < repititions; i++)
-                    {
-                        deserializeAction(stream);
-                        stream.Seek(0, SeekOrigin.Begin);
-                    }
-                }, $"{name} Cold Deserialization");
+                // hot run / prime the pump / warmup
+                deserializeAction(stream);
+                stream.Seek(0, SeekOrigin.Begin);
 
-                Run(() =>
+                for (int i = 0; i < repititions; i++)
                 {
-                    for (int i = 0; i < repititions; i++)
+                    measurements.Add(Run(() =>
                     {
-                        deserializeAction(stream);
-                        stream.Seek(0, SeekOrigin.Begin);
-                    }
-                }, $"{name} Hot Deserialization");
+                            deserializeAction(stream);
+                            stream.Seek(0, SeekOrigin.Begin);
+                    }));
+                }
             }
+
+            return measurements;
         }
 
         public static PersonProtobuf CreatePersonProtobuf()
         {
-            var documents = new List<DocumentProtobuf>();
+            var documents = new List<DocumentProtobuf>
+            {
+                Capacity = documentsCount
+            };
 
-            for (int i = 0; i < repititions; i++)
+            for (int i = 0; i < documentsCount; i++)
             {
                 documents.Add(new DocumentProtobuf
                 {
@@ -211,9 +246,12 @@ namespace SerializerComparison
 
         public static PersonWithoutAttributes CreatePersonWithoutAttributes()
         {
-            var documents = new List<DocumentWithoutAttributes>();
+            var documents = new List<DocumentWithoutAttributes>
+            {
+                Capacity = documentsCount
+            };
 
-            for (int i = 0; i < repititions; i++)
+            for (int i = 0; i < documentsCount; i++)
             {
                 documents.Add(new DocumentWithoutAttributes
                 {
@@ -236,9 +274,12 @@ namespace SerializerComparison
 
         public static Person CreatePerson()
         {
-            var documents = new List<Document>();
+            var documents = new List<Document>
+            {
+                Capacity = documentsCount
+            };
 
-            for (int i = 0; i < repititions; i++)
+            for (int i = 0; i < documentsCount; i++)
             {
                 documents.Add(new Document
                 {
