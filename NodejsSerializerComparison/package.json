@@ -5,5 +5,14 @@
   "main": "app.js",
   "author": {
     "name": "Oipo"
+  },
+  "dependencies": {
+    "fast-json": "^1.1.0",
+    "fast-json-parse": "^1.0.2",
+    "fast-json-stringify": "^0.10.4",
+    "lodash": "^4.17.4",
+    "node-protobuf": "^1.4.3",
+    "node-windows": "^0.1.14",
+    "nodeaffinity": "^0.1.0"
   }
 }

@@ -12,9 +12,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxPlotter", "BoxPlotter\BoxPlotter.csproj", "{2B535395-712A-4229-8CE9-25147AB9E2B6}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
@@ -36,12 +33,14 @@ Global
 		{8FBC5004-CD63-4457-9C03-8F5C3089E499}.Release|x64.Build.0 = Release|Any CPU
 		{8FBC5004-CD63-4457-9C03-8F5C3089E499}.Release|x86.ActiveCfg = Release|Any CPU
 		{8FBC5004-CD63-4457-9C03-8F5C3089E499}.Release|x86.Build.0 = Release|Any CPU
-		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|Any CPU.Build.0 = Debug|x64
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|x64.ActiveCfg = Debug|x64
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|x64.Build.0 = Debug|x64
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|x86.ActiveCfg = Debug|Win32
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Debug|x86.Build.0 = Debug|Win32
-		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Release|Any CPU.ActiveCfg = Release|Win32
+		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Release|Any CPU.ActiveCfg = Release|x64
+		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Release|Any CPU.Build.0 = Release|x64
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Release|x64.ActiveCfg = Release|x64
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Release|x64.Build.0 = Release|x64
 		{8BBEDF6B-843D-42AE-A302-F4E573927059}.Release|x86.ActiveCfg = Release|Win32
@@ -73,5 +72,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

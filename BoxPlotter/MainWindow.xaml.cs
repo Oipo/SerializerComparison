@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -98,7 +99,7 @@ namespace BoxPlotter
 
                         for (int i = 1; i < info.Length; i++)
                         {
-                            measurements.Add(double.Parse(info[i]));
+                            measurements.Add(double.Parse(info[i], CultureInfo.InvariantCulture));
                         }
 
                         measurements.Sort();

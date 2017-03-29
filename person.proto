@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package SerializerComparison;
+
+import "google/protobuf/timestamp.proto";
+
+message DocumentProtobuf {
+  int32 Id = 1;
+  string Name = 2;
+  bytes Content = 3;
+  google.protobuf.Timestamp ExpirationDate = 4;
+}
+
+message PersonProtobuf {
+  int32 Age = 1;
+  google.protobuf.Timestamp Birthday = 2;
+  string Name = 3;
+  repeated DocumentProtobuf Documents = 4;
+}
