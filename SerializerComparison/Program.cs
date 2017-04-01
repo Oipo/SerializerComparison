@@ -30,6 +30,7 @@ namespace SerializerComparison
             BinaryFormatter bf = new BinaryFormatter();
             Newtonsoft.Json.JsonSerializer NewtonJson = new Newtonsoft.Json.JsonSerializer();
             var msgpack = MsgPack.Serialization.SerializationContext.Default.GetSerializer<PersonWithoutAttributes>();
+            var hyperion = new Hyperion.Serializer(new Hyperion.SerializerOptions(false, false));
 
             Jil.JSON.SetDefaultOptions(new Jil.Options(unspecifiedDateTimeKindBehavior: Jil.UnspecifiedDateTimeKindBehavior.IsUTC));
 
@@ -44,6 +45,14 @@ namespace SerializerComparison
 
             TestRunner.PrintMeasurements(measurements, "Jil Serialization");
             logger.Debug($"Jil Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((p) =>
+            {
+                Jil.JSON.Serialize(p, new Jil.Options(unspecifiedDateTimeKindBehavior: Jil.UnspecifiedDateTimeKindBehavior.IsUTC));
+            }, TestRunner.CreatePersonWithoutAttributes());
+
+            TestRunner.PrintMeasurements(measurements, "Jil With Options Serialization");
+            logger.Debug($"Jil With Options Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
             measurements = TestRunner.RunTestSerialize((PersonWithoutAttributes p, Stream stream) =>
             {
@@ -137,13 +146,29 @@ namespace SerializerComparison
             TestRunner.PrintMeasurements(measurements, "BinaryFormatter Stream Serialization");
             logger.Debug($"BinaryFormatter Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
+            measurements = TestRunner.RunTestSerialize((p) =>
+            {
+                ZeroFormatter.ZeroFormatterSerializer.Serialize(p);
+            }, TestRunner.CreatePersonZeroFormatter());
+
+            TestRunner.PrintMeasurements(measurements, "ZeroFormatter Serialization");
+            logger.Debug($"ZeroFormatter Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestSerialize((Person p, Stream stream) =>
+            {
+                hyperion.Serialize(p, stream);
+            }, TestRunner.CreatePerson());
+
+            TestRunner.PrintMeasurements(measurements, "Hyperion Stream Serialization");
+            logger.Debug($"Hyperion Stream Serialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
             measurements = TestRunner.RunTestDeserialize((json) =>
             {
                 Jil.JSON.Deserialize<PersonWithoutAttributes>(json);
             });
 
             TestRunner.PrintMeasurements(measurements, "Jil Without Attributes Deserialization");
-            logger.Debug($"Jil Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+            logger.Debug($"Jil Without Attributes Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
             measurements = TestRunner.RunTestDeserialize((json) =>
             {
@@ -265,6 +290,30 @@ namespace SerializerComparison
 
             TestRunner.PrintMeasurements(measurements, "BinaryFormatter Stream Deserialization");
             logger.Debug($"BinaryFormatter Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((byte[] bytes) =>
+            {
+                ZeroFormatter.ZeroFormatterSerializer.Deserialize<PersonZeroFormatter>(bytes);
+            }, TestRunner.FormatType.ZeroFormatterFormat);
+
+            TestRunner.PrintMeasurements(measurements, "ZeroFormatter Deserialization");
+            logger.Debug($"ZeroFormatter Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((Stream stream) =>
+            {
+                ZeroFormatter.ZeroFormatterSerializer.Deserialize<PersonZeroFormatter>(stream);
+            }, TestRunner.FormatType.ZeroFormatterFormat);
+
+            TestRunner.PrintMeasurements(measurements, "ZeroFormatter Stream Deserialization");
+            logger.Debug($"ZeroFormatter Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+
+            measurements = TestRunner.RunTestDeserialize((Stream stream) =>
+            {
+                hyperion.Deserialize<Person>(stream);
+            }, TestRunner.FormatType.HyperionFormat);
+
+            TestRunner.PrintMeasurements(measurements, "Hyperion Stream Deserialization");
+            logger.Debug($"Hyperion Stream Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
             logger.Info("Stopping measurements");
             Console.ReadKey();

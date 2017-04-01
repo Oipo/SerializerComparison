@@ -15,7 +15,9 @@ namespace SerializerComparison
             XmlFormat,
             BinaryFormat,
             ProtobufFormat,
-            MsgPackFormat
+            MsgPackFormat,
+            ZeroFormatterFormat,
+            HyperionFormat
         }
 
         const long reserveGcMem = 1024 * 1024 * 1;
@@ -100,10 +102,9 @@ namespace SerializerComparison
                 {
                     measurements.Add(Run(() =>
                     {
-
                         serializeAction(person, stream);
-                        stream.Seek(0, SeekOrigin.Begin);
                     }));
+                    stream.Seek(0, SeekOrigin.Begin);
                 }
             }
 
@@ -138,8 +139,35 @@ namespace SerializerComparison
             {
                 measurements.Add(Run(() =>
                 {
-                
-                        deserializeAction(input);
+                    deserializeAction(input);
+                }));
+            }
+
+            return measurements;
+        }
+
+        public static List<long> RunTestDeserialize(Action<byte[]> deserializeAction, FormatType type = FormatType.ZeroFormatterFormat)
+        {
+            byte[] input;
+            if (type != FormatType.ZeroFormatterFormat)
+            {
+                throw new Exception();
+            }
+            input = File.ReadAllBytes("PersonZeroFormatter.txt");
+
+            List<long> measurements = new List<long>
+            {
+                Capacity = repititions
+            };
+
+            // hot run / prime the pump / warmup
+            deserializeAction(input);
+
+            for (int i = 0; i < repititions; i++)
+            {
+                measurements.Add(Run(() =>
+                {
+                    deserializeAction(input);
                 }));
             }
 
@@ -170,6 +198,16 @@ namespace SerializerComparison
                 input = "";
                 binaryInput = File.ReadAllBytes("PersonMsgPack.txt");
             }
+            else if(type == FormatType.ZeroFormatterFormat)
+            {
+                input = "";
+                binaryInput = File.ReadAllBytes("PersonZeroFormatter.txt");
+            }
+            else if(type == FormatType.HyperionFormat)
+            {
+                input = "";
+                binaryInput = File.ReadAllBytes("PersonHyperion.txt");
+            }
             else
             {
                 input = "";
@@ -183,7 +221,8 @@ namespace SerializerComparison
 
             using (var stream = new MemoryStream())
             {
-                if (type == FormatType.BinaryFormat || type == FormatType.ProtobufFormat || type == FormatType.MsgPackFormat)
+                if (type == FormatType.BinaryFormat || type == FormatType.ProtobufFormat || type == FormatType.MsgPackFormat ||
+                    type == FormatType.ZeroFormatterFormat || type == FormatType.HyperionFormat)
                 {
                     using (var writer = new BinaryWriter(stream, new UTF8Encoding(false), true))
                     {
@@ -208,8 +247,9 @@ namespace SerializerComparison
                     measurements.Add(Run(() =>
                     {
                             deserializeAction(stream);
-                            stream.Seek(0, SeekOrigin.Begin);
                     }));
+
+                    stream.Seek(0, SeekOrigin.Begin);
                 }
             }
 
@@ -236,6 +276,34 @@ namespace SerializerComparison
             }
 
             return new PersonProtobuf
+            {
+                Age = 123,
+                Birthday = DateTime.UtcNow,
+                Name = "John Doe",
+                Documents = documents
+            };
+        }
+
+        public static PersonZeroFormatter CreatePersonZeroFormatter()
+        {
+            var documents = new List<DocumentZeroFormatter>
+            {
+                Capacity = documentsCount
+            };
+
+            for (int i = 0; i < documentsCount; i++)
+            {
+                documents.Add(new DocumentZeroFormatter
+                {
+                    Id = i,
+                    Name = $"License{i}",
+                    Content = "abcdefghijklmnopqrstuvwxyzüäçéèß",
+                    ExpirationDate = DateTime.UtcNow.AddDays(i)
+
+                });
+            }
+
+            return new PersonZeroFormatter
             {
                 Age = 123,
                 Birthday = DateTime.UtcNow,

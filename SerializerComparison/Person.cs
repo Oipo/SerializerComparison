@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using ZeroFormatter;
 
 namespace SerializerComparison
 {
@@ -122,5 +123,37 @@ namespace SerializerComparison
 
         [ProtoMember(4)]
         public List<DocumentProtobuf> Documents { get; set; }
+    }
+
+    [ZeroFormattable]
+    public class DocumentZeroFormatter
+    {
+        [Index(0)]
+        public virtual int Id { get; set; }
+
+        [Index(1)]
+        public virtual string Name { get; set; }
+
+        [Index(2)]
+        public virtual string Content { get; set; }
+
+        [Index(3)]
+        public virtual DateTime ExpirationDate { get; set; }
+    }
+
+    [ZeroFormattable]
+    public class PersonZeroFormatter : IPerson
+    {
+        [Index(0)]
+        public virtual int Age { get; set; }
+
+        [Index(1)]
+        public virtual DateTime Birthday { get; set; }
+
+        [Index(2)]
+        public virtual string Name { get; set; }
+
+        [Index(3)]
+        public virtual List<DocumentZeroFormatter> Documents { get; set; }
     }
 }
