@@ -152,7 +152,7 @@ namespace SerializerComparison
             });
 
             TestRunner.PrintMeasurements(measurements, "Jil With Attributes Deserialization");
-            logger.Debug($"Jil Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+            logger.Debug($"Jil With Attributes Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
             measurements = TestRunner.RunTestDeserialize((stream) =>
             {
@@ -175,7 +175,7 @@ namespace SerializerComparison
             });
 
             TestRunner.PrintMeasurements(measurements, "Jil Stream Type Without Attributes Deserialization");
-            logger.Debug($"Jil Stream Type Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+            logger.Debug($"Jil Stream Type Without Attributes Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
             personType = typeof(Person);
             measurements = TestRunner.RunTestDeserialize((stream) =>
@@ -188,7 +188,7 @@ namespace SerializerComparison
             });
 
             TestRunner.PrintMeasurements(measurements, "Jil Stream Type With Attributes Deserialization");
-            logger.Debug($"Jil Stream Type Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
+            logger.Debug($"Jil Stream Type With Attributes Deserialization: {string.Join(":", measurements.Select(m => TestRunner.ConvertToMicroSeconds(m)))}");
 
             measurements = TestRunner.RunTestDeserialize((json) =>
             {

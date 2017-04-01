@@ -7,5 +7,9 @@ packages/
 *.psess
 *.bak
 *.user
+*.vcxproj.filters
 /measurements.txt
-
+node_modules/
+x86/
+x64/
+logs/
